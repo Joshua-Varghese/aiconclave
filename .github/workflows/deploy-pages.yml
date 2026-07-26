@@ -21,10 +21,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Only ship the static site — keeps .github / .git out of the upload.
+      # Existing Pages project + custom domain (aiconclave26.ajce.in) stay as-is.
+      - name: Prepare publish directory
+        run: |
+          mkdir -p publish
+          cp index.html style.css script.js publish/
+          cp -r About Schedule Participate Register publish/
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Direct-upload to the existing project. Custom domain is unchanged.
-          command: pages deploy . --project-name=aiconclave --branch=main --commit-dirty=true
+          command: pages deploy publish --project-name=aiconclave --branch=main --commit-dirty=true
