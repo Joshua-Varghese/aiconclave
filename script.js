@@ -177,50 +177,34 @@
     var panel = document.getElementById("confirmation-panel");
     var summary = document.getElementById("confirmation-summary");
     var again = document.getElementById("register-again");
+    var submitBtn = document.getElementById("register-submit");
+    var submitting = false;
 
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
+    function setError(message) {
+      if (!errorEl) return;
+      errorEl.textContent = message || "Please fill in all required fields.";
+      errorEl.classList.add("is-visible");
+    }
 
-      var name = form.elements.namedItem("name");
-      var email = form.elements.namedItem("email");
-      var phone = form.elements.namedItem("phone");
-      var org = form.elements.namedItem("organisation");
-      var category = form.elements.namedItem("category");
+    function clearError() {
+      if (!errorEl) return;
+      errorEl.classList.remove("is-visible");
+    }
 
-      var valid =
-        name &&
-        name.value.trim() &&
-        email &&
-        email.value.trim() &&
-        phone &&
-        phone.value.trim() &&
-        org &&
-        org.value.trim() &&
-        category &&
-        category.value;
-
-      if (!valid) {
-        if (errorEl) errorEl.classList.add("is-visible");
-        return;
+    function setSubmitting(state) {
+      submitting = state;
+      if (!submitBtn) return;
+      submitBtn.disabled = state;
+      submitBtn.setAttribute("aria-busy", state ? "true" : "false");
+      if (state) {
+        submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+        submitBtn.textContent = "Submitting…";
+      } else if (submitBtn.dataset.originalHtml) {
+        submitBtn.innerHTML = submitBtn.dataset.originalHtml;
       }
+    }
 
-      if (errorEl) errorEl.classList.remove("is-visible");
-
-      var tracks = Array.prototype.slice
-        .call(form.querySelectorAll('input[name="tracks"]:checked'))
-        .map(function (el) {
-          return el.value;
-        });
-
-      var formData = {
-        name: name.value.trim(),
-        email: email.value.trim(),
-        phone: phone.value.trim(),
-        organisation: org.value.trim(),
-        category: category.value,
-        tracks: tracks
-      };
-
+    function showConfirmation(formData) {
       if (summary) {
         var tracksText = formData.tracks.length ? formData.tracks.join(", ") : "None selected";
         summary.innerHTML =
@@ -244,6 +228,82 @@
         panel.setAttribute("tabindex", "-1");
         panel.focus();
       }
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (submitting) return;
+
+      var name = form.elements.namedItem("name");
+      var email = form.elements.namedItem("email");
+      var phone = form.elements.namedItem("phone");
+      var org = form.elements.namedItem("organisation");
+      var category = form.elements.namedItem("category");
+
+      var valid =
+        name &&
+        name.value.trim() &&
+        email &&
+        email.value.trim() &&
+        phone &&
+        phone.value.trim() &&
+        org &&
+        org.value.trim() &&
+        category &&
+        category.value;
+
+      if (!valid) {
+        setError("Please fill in all required fields.");
+        return;
+      }
+
+      clearError();
+
+      var tracks = Array.prototype.slice
+        .call(form.querySelectorAll('input[name="tracks"]:checked'))
+        .map(function (el) {
+          return el.value;
+        });
+
+      var formData = {
+        name: name.value.trim(),
+        email: email.value.trim(),
+        phone: phone.value.trim(),
+        organisation: org.value.trim(),
+        category: category.value,
+        tracks: tracks
+      };
+
+      setSubmitting(true);
+
+      fetch("/api/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(formData)
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, status: res.status, data: data || {} };
+          }).catch(function () {
+            return { ok: res.ok, status: res.status, data: {} };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok || !result.data.ok) {
+            setError(
+              (result.data && result.data.error) ||
+                "Could not save registration. Please try again."
+            );
+            return;
+          }
+          showConfirmation(result.data.registration || formData);
+        })
+        .catch(function () {
+          setError("Network error. Check your connection and try again.");
+        })
+        .then(function () {
+          setSubmitting(false);
+        });
     });
 
     if (again) {
@@ -255,7 +315,7 @@
           panel.removeAttribute("tabindex");
         }
         if (summary) summary.innerHTML = "";
-        if (errorEl) errorEl.classList.remove("is-visible");
+        clearError();
         var nameField = document.getElementById("field-name");
         if (nameField) nameField.focus();
       });
