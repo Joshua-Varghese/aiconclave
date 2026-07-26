@@ -21,8 +21,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Static assets only in publish/. Pages Functions stay at repo root
-      # (./functions) and are picked up by wrangler pages deploy via wrangler.toml.
+      # Static assets only in publish/. D1 + Pages Functions live under db/
+      # and are picked up via --config db/wrangler.toml.
       - name: Prepare publish directory
         run: |
           mkdir -p publish
@@ -35,5 +35,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.38.0"
-          # Deploy from repo root so wrangler.toml + functions/ are included.
-          command: pages deploy publish --project-name=aiconclave --branch=main --commit-dirty=true
+          command: pages deploy publish --project-name=aiconclave --branch=main --commit-dirty=true --config db/wrangler.toml
