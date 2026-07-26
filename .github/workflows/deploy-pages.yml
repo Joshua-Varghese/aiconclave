@@ -21,13 +21,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Static assets only in publish/. D1 + Pages Functions live under db/
-      # and are picked up via --config db/wrangler.toml.
+      # Static assets go in publish/.
+      # DB stack lives under db/; Pages requires wrangler.toml + functions/
+      # at the deploy root, so copy them in for the upload only.
       - name: Prepare publish directory
         run: |
           mkdir -p publish
           cp index.html style.css script.js publish/
           cp -r About Schedule Participate Register publish/
+          cp db/wrangler.toml ./wrangler.toml
+          rm -rf functions
+          cp -r db/functions ./functions
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
@@ -35,4 +39,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.38.0"
-          command: pages deploy publish --project-name=aiconclave --branch=main --commit-dirty=true --config db/wrangler.toml
+          command: pages deploy publish --project-name=aiconclave --branch=main --commit-dirty=true

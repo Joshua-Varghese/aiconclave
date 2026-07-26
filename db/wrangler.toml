@@ -1,11 +1,10 @@
 # Cloudflare Pages + D1 config for AI Conclave registrations.
-# Deploy from repo root:
-#   wrangler pages deploy publish --project-name=aiconclave --config db/wrangler.toml
+# Source of truth lives in db/. CI copies this to the repo root before deploy
+# (Pages does not allow --config with a custom path).
 
 name = "aiconclave"
 compatibility_date = "2026-07-25"
-# Path is relative to this config file (db/)
-pages_build_output_dir = "../publish"
+pages_build_output_dir = "publish"
 
 [[d1_databases]]
 binding = "DB"
