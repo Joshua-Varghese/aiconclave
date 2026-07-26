@@ -1,4 +1,5 @@
 name = "aiconclave"
+account_id = "8784dd7883d1306d209b61ff4a0f5d1c"
 compatibility_date = "2026-07-25"
 pages_build_output_dir = "publish"
 
